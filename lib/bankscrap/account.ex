@@ -5,6 +5,7 @@ defmodule Bankscrap.Account do
     :name,
     :balance,
     :available_balance,
+    :currency,
     :description,
     :transactions,
     :iban,

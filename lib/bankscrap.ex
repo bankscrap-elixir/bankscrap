@@ -4,27 +4,45 @@ defmodule Bankscrap do
   """
 
   use HTTPoison.Base
+  alias Bankscrap.Session
 
-  @default_opts [follow_redirect: true]
+  @default_opts []
 
-  def get(url, headers \\ [], params \\ %{}) do
+  def get(url, params, headers \\ []) do
     url_with_params = add_params_to_url(url, params)
-    do_request(:get, url_with_params, headers, params)
+    do_request(:get, url_with_params, params, headers)
   end
 
-  defp do_request(method, url, headers, params) do
-    request!(method, url, headers, params, @default_opts) |> process_response
+  def post(url, params, headers \\ [], session) do
+    url
+    |> post!(params, headers, build_options(session))
   end
 
-  def process_response(%HTTPoison.Response{status_code: 200, body: body}),
-    do: body
+  defp build_options(nil), do: @default_opts ++ [hackney: [:insecure]]
+
+  defp build_options(%Session{cookies: cookies}) do
+    cookie_list =
+      Enum.map(cookies, fn {_, cookie_content} ->
+        cookie_content
+        |> String.split(";")
+        |> Enum.at(0)
+      end)
+
+    @default_opts ++ [hackney: [cookie: cookie_list]]
+  end
+
+  defp do_request(method, url, params, headers) do
+    request!(method, url, params, headers, @default_opts) |> process_response
+  end
+
+  def process_response(%HTTPoison.Response{status_code: 200, body: body}), do: body
 
   def process_response(%HTTPoison.Response{status_code: status_code, body: body}),
-      do: {status_code, body}
+    do: {status_code, body}
 
-  @spec process_response_body(binary) :: term
-  def process_response_body(""), do: nil
-  def process_response_body(body), do: Poison.decode!(body)
+  def process_response(%HTTPoison.AsyncResponse{id: {_, _code, headers, _}}) do
+    headers
+  end
 
   @doc """
   Take an existing URI and add addition params, appending and replacing as necessary
