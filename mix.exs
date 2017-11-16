@@ -22,7 +22,8 @@ defmodule Bankscrap.MixProject do
   defp deps do
     [
       {:httpoison, "~> 0.13.0"},
-      {:poison, "~> 3.1"}
+      {:poison, "~> 3.1"},
+      {:money, "~> 1.2"}
     ]
   end
 end
